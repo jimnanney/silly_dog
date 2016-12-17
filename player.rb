@@ -1,14 +1,27 @@
 class Player
+  attr_accessor :x, :y
+
+  FINISHED = 0
   RUNNING = 1
   JUMPING = 2
   SLIDING = 3
+  MAX_JUMP_TIME = 500
+  MAX_SIZE = 1.8
+  MIN_SIZE = 1
+  TURN_ANGLE = 15
+  TURN_SPEED = 5
+  MAX_RUN_SPEED = 3
 
   def initialize x,y
     @x, @y = x, y
     @state = RUNNING
+    @jump_sound = Gosu::Sample.new("media/sounds/jump.wav")
     @running = Gosu::Image.load_tiles("media/Corgi - Running Forward.png", 48, 48, :tileable => true)
-    @scales = [1,1.2,1.4,1.6,1.8,1.6,1.4,1.2,1]
+    @delta_scale = 0
     @scale = 1
+    @jumpstate = Gosu::milliseconds
+    @rot = 0
+    @player_image = cur_image
   end
 
   def draw
@@ -16,39 +29,66 @@ class Player
   end
 
   def update
+    @scale += @delta_scale
+    @scale = MIN_SIZE if @scale < MIN_SIZE
+    @scale = MAX_SIZE if @scale > MAX_SIZE
     @player_image = cur_image
+    @delta_scale = -0.1
   end
 
   def cur_image
     case @state
+      when FINISHED
+        @running[0]
       when RUNNING
-        @running[Gosu::milliseconds / 175 % 3]
+        running_frame
       when JUMPING
-        @jumpstate += 1 if ((Gosu::milliseconds / 175 % 3) == 0)
-        @scale = @scales[@jumpstate]
-        @state = RUNNING if @jumpstate == 8
-        @running[Gosu::milliseconds / 175 % 3]
+        @state = RUNNING if end_of_jump?
+        running_frame
     end
   end
 
   def move_forward
-    @rot = 0
+    @y -= MAX_RUN_SPEED
+    if @y < 100
+      @y = 100
+      @rot = @rot + 4 % 360
+      @state = FINISHED
+    else 
+      @rot = 0
+    end
   end
 
   def move_right
-    @rot = 15
-    @x += 5
+    @rot = TURN_ANGLE
+    @x += TURN_SPEED
   end
 
   def move_left
-    @rot = -15
-    @x -= 5
+    @rot = -TURN_ANGLE
+    @x -= TURN_SPEED
   end
 
   def jump
-    return if @state == JUMPING
-    @jumpstate = 0
+    return if must_fall?
+    @delta_scale = 0.1
+    @jumpstate = Gosu::milliseconds + MAX_JUMP_TIME if @jumpstate < Gosu::milliseconds
+    @jump_sound.play if ( @state != JUMPING && @state != FINISHED )
     @state = JUMPING
+  end
+
+  private
+
+  def running_frame
+    @running[Gosu::milliseconds / 175 % 3]
+  end
+
+  def must_fall?
+    @state == JUMPING && Gosu::milliseconds > @jumpstate
+  end
+
+  def end_of_jump?
+    must_fall? && @scale == MIN_SIZE
   end
 end
 
