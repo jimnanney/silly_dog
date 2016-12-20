@@ -14,6 +14,8 @@ class SillyDog < Gosu::Window
     @camera_x = @camera_y = 0
     #@map = Map.new
     @map = Gosu::Tiled.load_json(self, "media/level one.json")
+    @music = Gosu::Song.new("media/ripinpieces.wav")
+    @music.play(true)
   end
 
   def update
