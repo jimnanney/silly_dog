@@ -1,7 +1,11 @@
+require 'gosu_tiled'
+
 class Map
   attr_reader :width, :height
 
   def initialize
+    @map = Gosu::Tiled.load_json(self, "media/level one.json")
+    return
     @tileset = Gosu::Image.load_tiles("media/Tiles.png", 48, 48, :tileable => true)
     @height = 100
     @width = 17
@@ -16,6 +20,8 @@ class Map
   end
 
   def draw
+    @map.draw
+    return
     @height.times do |y|
       @width.times do |x|
         tile = @tiles[x][y]
